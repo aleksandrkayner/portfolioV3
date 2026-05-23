@@ -1,0 +1,4 @@
+# Keep Heroku slug smaller (docs not needed at runtime)
+docs/
+*.md
+!README.md
