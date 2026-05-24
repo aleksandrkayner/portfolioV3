@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 
+/* Default tokens (dark) — overridden per [data-theme] */
 @theme {
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
@@ -15,13 +16,49 @@
   --color-warning: #fbbf24;
 }
 
+[data-theme='light'] {
+  --color-dashboard-bg: #f3f4f8;
+  --color-dashboard-surface: #ffffff;
+  --color-dashboard-border: #e2e5ec;
+  --color-dashboard-muted: #5c6478;
+  --color-dashboard-text: #12141c;
+  --color-accent: #4f46e5;
+  --color-accent-hover: #6366f1;
+  --color-success: #059669;
+  --color-warning: #d97706;
+}
+
+[data-theme='dark'] {
+  --color-dashboard-bg: #0f1117;
+  --color-dashboard-surface: #181b24;
+  --color-dashboard-border: #2a2f3d;
+  --color-dashboard-muted: #8b93a7;
+  --color-dashboard-text: #e8eaef;
+  --color-accent: #6366f1;
+  --color-accent-hover: #818cf8;
+  --color-success: #34d399;
+  --color-warning: #fbbf24;
+}
+
+[data-theme='prismatic'] {
+  --color-dashboard-bg: #1a0f24;
+  --color-dashboard-surface: #261833;
+  --color-dashboard-border: #4a3060;
+  --color-dashboard-muted: #d4c4e8;
+  --color-dashboard-text: #faf5ff;
+  --color-accent: #e40303;
+  --color-accent-hover: #ff6b9d;
+  --color-success: #008026;
+  --color-warning: #ff8c00;
+}
+
 @layer base {
   html {
     @apply antialiased scroll-smooth;
   }
 
   body {
-    @apply m-0 min-h-svh bg-dashboard-bg font-sans text-dashboard-text;
+    @apply m-0 min-h-svh bg-dashboard-bg font-sans text-dashboard-text transition-colors duration-300;
   }
 
   #root {
@@ -31,4 +68,91 @@
   ::selection {
     @apply bg-accent/30 text-white;
   }
+}
+
+/* Prismatic theme accents */
+[data-theme='prismatic'] .widget-card {
+  position: relative;
+}
+
+[data-theme='prismatic'] .widget-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    #e40303,
+    #ff8c00,
+    #ffed00,
+    #008026,
+    #24408e,
+    #732982
+  );
+  border-radius: 1rem 1rem 0 0;
+  z-index: 1;
+}
+
+[data-theme='prismatic'] .skill-bar-fill {
+  background: linear-gradient(
+    90deg,
+    #e40303,
+    #ff8c00,
+    #ffed00,
+    #008026,
+    #24408e,
+    #732982
+  ) !important;
+}
+
+[data-theme='prismatic'] .header-avatar {
+  background: linear-gradient(
+    135deg,
+    #e40303,
+    #ff8c00,
+    #ffed00,
+    #008026,
+    #24408e,
+    #732982
+  ) !important;
+}
+
+[data-theme='prismatic'] .theme-toggle-active {
+  background: linear-gradient(
+    90deg,
+    #e40303,
+    #ff8c00,
+    #ffed00,
+    #008026,
+    #24408e,
+    #732982
+  ) !important;
+  color: #fff !important;
+}
+
+/* Draggable dashboard grid (react-grid-layout) */
+.dashboard-grid-host {
+  width: 100%;
+}
+
+.dashboard-grid-item {
+  display: flex;
+  min-height: 0;
+}
+
+.dashboard-grid-layout .react-grid-item {
+  transition: box-shadow 0.15s ease;
+  overflow: visible;
+}
+
+.dashboard-grid-layout .react-grid-item.react-draggable-dragging {
+  z-index: 10;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+}
+
+.dashboard-grid-layout .widget-card {
+  min-height: 100%;
+  min-width: 100%;
 }

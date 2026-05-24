@@ -1,5 +1,5 @@
 import type { WidgetComponentProps } from '../../types/widget'
-import { projects } from '../../data/portfolio'
+import { getVisibleProjects } from '../../data/portfolio'
 import { WidgetShell } from '../ui/WidgetShell'
 
 const statusStyles = {
@@ -9,9 +9,9 @@ const statusStyles = {
 
 export function ProjectsWidget({ id }: WidgetComponentProps) {
   return (
-    <WidgetShell title="Projects" subtitle="Selected work">
+    <WidgetShell id={id} title="Projects" subtitle="Selected work">
       <ul id={id} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {projects.map((project) => (
+        {getVisibleProjects().map((project) => (
           <li
             key={project.id}
             className="flex flex-col rounded-xl border border-dashboard-border bg-dashboard-bg/50 p-4 transition-colors hover:border-accent/40"

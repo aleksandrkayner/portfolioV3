@@ -1,63 +1,8 @@
 # Deployment guide
 
-## Heroku (this project)
+This project outputs a **static SPA** — no Node server required. Run `npm run build` and publish the `dist/` folder.
 
-This repo is configured for Heroku with `Procfile`, `heroku-postbuild`, and the `serve` package for the Vite SPA.
-
-**Target URL:** `https://aleksandraynerporfolio.herokuapp.com`  
-(Heroku app names are lowercase; the name still reads as *AleksandraynerPorfolio*.)
-
-### Cost note
-
-Heroku **no longer has a free tier**. You need a paid Eco/Basic dyno (about $5/month as of 2024). Billing is on your Heroku account.
-
-### One-time setup
-
-```bash
-cd "/Users/alexkayner/Desktop/portfolio v3"
-npm install
-heroku login
-git init
-git add .
-git commit -m "Prepare portfolio for Heroku"
-heroku create aleksandraynerporfolio
-git push heroku main
-```
-
-If `aleksandraynerporfolio` is already taken globally, try a variant:
-
-```bash
-heroku create aleksandraynerporfolio-v3
-```
-
-### Deploy updates later
-
-```bash
-git add .
-git commit -m "Update portfolio"
-git push heroku main
-```
-
-### Open the site
-
-```bash
-heroku open
-```
-
-### Troubleshooting (Heroku)
-
-| Issue | Fix |
-|-------|-----|
-| `Name is already taken` | Pick a unique suffix: `aleksandraynerporfolio-dev` |
-| Build fails (TypeScript/Vite) | Run `npm run build` locally first; ensure Node 20 |
-| Blank page | Check `heroku logs --tail`; confirm `dist/` exists after build |
-| App crash on start | Verify `serve` is in `dependencies` and `PORT` is used |
-
----
-
-## Other hosts (free tiers)
-
-For a static React/Vite app, these alternatives have free plans:
+## Free hosting options
 
 | Platform | Free tier | Best for |
 |----------|-----------|----------|
@@ -65,8 +10,6 @@ For a static React/Vite app, these alternatives have free plans:
 | [Netlify](https://netlify.com) | Starter | Static sites, forms |
 | [Cloudflare Pages](https://pages.cloudflare.com) | Yes | Global CDN, fast builds |
 | [Render](https://render.com) | Static sites free | Simple static hosting |
-
-This project outputs a **static SPA** — no server required.
 
 ## Build settings (all platforms)
 

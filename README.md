@@ -32,24 +32,12 @@ Edit **`src/data/portfolio.ts`** — name, projects, skills, links, and experien
 - [Widgets guide](docs/WIDGETS.md) — add or modify widgets
 - [Development](docs/DEVELOPMENT.md) — local workflow and conventions
 - [Deployment](docs/DEPLOYMENT.md) — free hosting (Vercel, Netlify, Render)
-- [Prompt log](docs/PROMPT-LOG.csv) — track AI prompts and what worked
+- [Themes](docs/THEMES.md) — light / dark / prismatic modes
+- [Prompt log](docs/PROMPT-LOG.csv) — track AI prompts (open in Excel or Google Sheets)
 
-## Deploy to Heroku
+## Deploy
 
-Configured for: **`https://aleksandraynerporfolio.herokuapp.com`**
-
-```bash
-npm install
-heroku login
-git init && git add . && git commit -m "Initial commit"
-heroku create aleksandraynerporfolio
-git push heroku main
-heroku open
-```
-
-Heroku requires a **paid dyno** (no free tier). Full steps: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
-
-Free alternatives (Vercel, Netlify, Cloudflare) are also documented there.
+Static SPA — deploy `dist/` after `npm run build`. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for Vercel, Netlify, Cloudflare Pages, and Render.
 
 ## Tech stack
 

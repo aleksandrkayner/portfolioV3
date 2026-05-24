@@ -4,7 +4,7 @@ import { WidgetShell } from '../ui/WidgetShell'
 
 export function AboutWidget({ id }: WidgetComponentProps) {
   return (
-    <WidgetShell title="Profile" subtitle="Overview" status="online">
+    <WidgetShell id={id} title="Profile" subtitle="Overview">
       <div id={id} className="flex h-full flex-col justify-between gap-6 text-left">
         <div>
           <p className="mb-1 text-xs font-medium uppercase tracking-wider text-accent">

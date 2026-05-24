@@ -1,10 +1,6 @@
 /**
- * Widget registry — add new widgets here to appear on the dashboard.
- *
- * Steps to add a widget:
- * 1. Create `src/components/widgets/YourWidget.tsx`
- * 2. Import it below and add a WidgetDefinition entry
- * 3. Document it in `docs/WIDGETS.md`
+ * Widget registry — 3-column draggable grid; grid.w (1–3) × grid.h (row units).
+ * Positions: WIDGET_PLACEMENTS in gridLayout.ts
  */
 import type { WidgetDefinition } from '../types/widget'
 import { AboutWidget } from '../components/widgets/AboutWidget'
@@ -20,58 +16,57 @@ export const widgetRegistry: WidgetDefinition[] = [
     id: 'about',
     title: 'Profile',
     subtitle: 'Overview',
-    size: 'hero',
+    grid: { w: 2, h: 2 },
     order: 1,
     component: AboutWidget,
   },
   {
     id: 'stats',
     title: 'At a glance',
-    size: 'sm',
+    grid: { w: 1, h: 1 },
     order: 2,
     component: StatsWidget,
+  },
+  {
+    id: 'learning',
+    title: 'Currently learning',
+    grid: { w: 1, h: 1 },
+    order: 3,
+    component: LearningWidget,
   },
   {
     id: 'skills',
     title: 'Skills',
     subtitle: 'Tech stack',
-    size: 'md',
-    order: 3,
-    component: SkillsWidget,
-  },
-  {
-    id: 'projects',
-    title: 'Projects',
-    subtitle: 'Selected work',
-    size: 'wide',
+    grid: { w: 1, h: 2 },
     order: 4,
-    component: ProjectsWidget,
-  },
-  {
-    id: 'experience',
-    title: 'Experience',
-    size: 'md',
-    order: 5,
-    component: ExperienceWidget,
-  },
-  {
-    id: 'learning',
-    title: 'Currently learning',
-    size: 'sm',
-    order: 6,
-    component: LearningWidget,
+    component: SkillsWidget,
   },
   {
     id: 'contact',
     title: 'Contact',
     subtitle: 'Get in touch',
-    size: 'md',
-    order: 7,
+    grid: { w: 1, h: 2 },
+    order: 5,
     component: ContactWidget,
+  },
+  {
+    id: 'projects',
+    title: 'Projects',
+    subtitle: 'Selected work',
+    grid: { w: 3, h: 2 },
+    order: 6,
+    component: ProjectsWidget,
+  },
+  {
+    id: 'experience',
+    title: 'Experience',
+    grid: { w: 3, h: 2 },
+    order: 7,
+    component: ExperienceWidget,
   },
 ]
 
-/** Active widgets sorted for rendering */
 export function getActiveWidgets(): WidgetDefinition[] {
   return widgetRegistry
     .filter((w) => w.enabled !== false)

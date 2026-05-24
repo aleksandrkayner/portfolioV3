@@ -4,7 +4,7 @@ import { WidgetShell } from '../ui/WidgetShell'
 
 export function ExperienceWidget({ id }: WidgetComponentProps) {
   return (
-    <WidgetShell title="Experience">
+    <WidgetShell id={id} title="Experience">
       <ol id={id} className="relative space-y-6 border-l border-dashboard-border pl-4">
         {experience.map((item) => (
           <li key={item.id} className="relative text-left">

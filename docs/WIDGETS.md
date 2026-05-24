@@ -1,79 +1,51 @@
 # Widgets guide
 
-## Built-in widgets
+## Grid rules
 
-| ID | Component | Size | Data source |
-|----|-----------|------|-------------|
-| `about` | `AboutWidget` | hero | `profile`, `socialLinks` |
-| `stats` | `StatsWidget` | sm | `stats` |
-| `skills` | `SkillsWidget` | md | `skills` |
-| `projects` | `ProjectsWidget` | wide | `projects` |
-| `experience` | `ExperienceWidget` | md | `experience` |
-| `learning` | `LearningWidget` | sm | `nowLearning` |
-| `contact` | `ContactWidget` | md | `profile`, `socialLinks` |
+| Field | Values | Meaning |
+|-------|--------|---------|
+| `grid.w` | `1`, `2`, `3` | Columns spanned (of 3 on desktop) |
+| `grid.h` | `1+` | Row units spanned (each row = 210px) |
 
-## Add a new widget (checklist)
+Desktop: **3 columns**, min **250×210px** per cell, draggable via the grip in the widget header.  
+Mobile (&lt;768px): **full width**, single column, still draggable.
 
-### 1. Create the component
+Layout state lives in MobX (`LayoutStore`) via the tsyringe container — in-memory only (resets on refresh).
 
-`src/components/widgets/WeatherWidget.tsx`:
+## Widget map (default)
 
-```tsx
-import type { WidgetComponentProps } from '../../types/widget'
-import { WidgetShell } from '../ui/WidgetShell'
+| ID | Size (w×h) | Starts at (col, row) |
+|----|------------|----------------------|
+| about | 2×2 | 1, 1 |
+| stats | 1×1 | 3, 1 |
+| learning | 1×1 | 3, 2 |
+| skills | 1×2 | 1, 3 |
+| contact | 1×2 | 2, 3 |
+| projects | 3×2 | 1, 5 |
+| experience | 3×2 | 1, 7 |
 
-export function WeatherWidget({ id }: WidgetComponentProps) {
-  return (
-    <WidgetShell title="Weather" subtitle="Local">
-      <div id={id}>Hello from a new widget</div>
-    </WidgetShell>
-  )
-}
-```
+Change default positions in `WIDGET_PLACEMENTS` (`src/config/gridLayout.ts`).
 
-### 2. Register it
-
-In `src/config/widgets.ts`:
+## Add a widget
 
 ```ts
-import { WeatherWidget } from '../components/widgets/WeatherWidget'
-
-// Add to widgetRegistry array:
 {
-  id: 'weather',
-  title: 'Weather',
-  size: 'sm',
+  id: 'blog',
+  title: 'Blog',
+  grid: { w: 1, h: 1 }, // w: 1–3, h: any positive integer
   order: 8,
-  component: WeatherWidget,
+  component: BlogWidget,
 },
 ```
 
-### 3. Add content (if needed)
+Add placement:
 
-Put strings and arrays in `src/data/portfolio.ts`, then import in your widget.
+```ts
+// gridLayout.ts → WIDGET_PLACEMENTS
+blog: { col: 3, row: 4 },
+```
 
-### 4. Choose a size
+## Row / column sizing
 
-Pick from: `sm` | `md` | `lg` | `wide` | `tall` | `hero`. Adjust layout in `src/config/grid.ts` if none fit.
-
-### 5. Document
-
-Add a row to the table in this file.
-
-## WidgetShell API
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `title` | string | required | Header title |
-| `subtitle` | string | — | Muted line under title |
-| `status` | `'online' \| 'idle' \| 'none'` | `'online'` | Status dot |
-| `className` | string | — | Extra classes on card |
-
-## Reorder or disable
-
-- **Order**: change `order` number (lower = earlier in grid flow)
-- **Disable**: `enabled: false` on the widget definition
-
-## Duplicate titles
-
-Widget components can pass their own `WidgetShell` title props (as implemented) independent of registry `title` — registry titles are reserved for future dynamic headers; keep them in sync manually for now.
+- `COL_MIN_PX` (250) and `ROW_HEIGHT_PX` (210) in `gridLayout.ts`
+- `GRID_GAP_PX` (16) between cells

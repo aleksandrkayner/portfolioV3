@@ -4,14 +4,14 @@ import { WidgetShell } from '../ui/WidgetShell'
 
 export function StatsWidget({ id }: WidgetComponentProps) {
   return (
-    <WidgetShell title="At a glance" status="none">
-      <ul id={id} className="flex h-full flex-col justify-center gap-4">
+    <WidgetShell id={id} title="At a glance">
+      <ul id={id} className="flex min-h-0 flex-col gap-2.5 pt-1">
         {stats.map((stat) => (
           <li key={stat.label} className="text-left">
-            <p className="font-mono text-2xl font-semibold text-dashboard-text">
+            <p className="font-mono text-xl font-semibold leading-tight text-dashboard-text sm:text-2xl">
               {stat.value}
             </p>
-            <p className="text-xs text-dashboard-muted">{stat.label}</p>
+            <p className="mt-0.5 text-xs text-dashboard-muted">{stat.label}</p>
           </li>
         ))}
       </ul>

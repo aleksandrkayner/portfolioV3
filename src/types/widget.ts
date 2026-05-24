@@ -1,17 +1,24 @@
 import type { ComponentType } from 'react'
 
-/** Grid span presets — maps to Tailwind col/row spans in DashboardGrid */
-export type WidgetSize = 'sm' | 'md' | 'lg' | 'wide' | 'tall' | 'hero'
+export const GRID_COLUMNS = 3
+
+/** Columns spanned (1–3 of 3) */
+export type GridColSpan = 1 | 2 | 3
+
+/** Rows spanned — unbounded; each row unit = ROW_HEIGHT_PX in gridLayout.ts */
+export type GridRowSpan = number
+
+export interface WidgetGridSpan {
+  w: GridColSpan
+  h: GridRowSpan
+}
 
 export interface WidgetDefinition {
   id: string
   title: string
-  /** Optional subtitle shown in widget chrome */
   subtitle?: string
-  size: WidgetSize
-  /** Lower numbers render first in the grid */
+  grid: WidgetGridSpan
   order: number
-  /** Set false to hide without removing code (feature flags) */
   enabled?: boolean
   component: ComponentType<WidgetComponentProps>
 }

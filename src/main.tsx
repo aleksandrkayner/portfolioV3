@@ -1,5 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import 'react-grid-layout/css/styles.css'
+import './di/container'
 import './index.css'
 import App from './App.tsx'
 

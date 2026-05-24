@@ -4,7 +4,7 @@ import { WidgetShell } from '../ui/WidgetShell'
 
 export function ContactWidget({ id }: WidgetComponentProps) {
   return (
-    <WidgetShell title="Contact" subtitle="Get in touch">
+    <WidgetShell id={id} title="Contact" subtitle="Get in touch">
       <div id={id} className="flex h-full flex-col justify-between gap-4 text-left">
         <p className="text-sm text-dashboard-muted">
           Interested in working together? Reach out — I typically respond within a

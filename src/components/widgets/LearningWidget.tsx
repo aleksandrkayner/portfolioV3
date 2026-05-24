@@ -4,7 +4,7 @@ import { WidgetShell } from '../ui/WidgetShell'
 
 export function LearningWidget({ id }: WidgetComponentProps) {
   return (
-    <WidgetShell title="Currently learning" status="idle">
+    <WidgetShell id={id} title="Currently learning">
       <ul id={id} className="flex flex-wrap gap-2">
         {nowLearning.map((topic) => (
           <li

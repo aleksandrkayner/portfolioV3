@@ -13,8 +13,13 @@ export const profile = {
   avatarInitials: 'AK',
 } as const
 
+/** Repo URL for the portfolio project card (not shown as a social button). */
+export const githubRepo = {
+  url: 'https://github.com/aleksandrkayner/portfolioV3',
+  name: 'portfolioV3',
+} as const
+
 export const socialLinks = [
-  { label: 'GitHub', href: 'https://github.com', icon: 'github' },
   { label: 'LinkedIn', href: 'https://linkedin.com', icon: 'linkedin' },
   { label: 'Email', href: `mailto:${profile.email}`, icon: 'mail' },
 ] as const
@@ -36,30 +41,21 @@ export const skills = [
 
 export const projects = [
   {
-    id: 'project-1',
-    title: 'Dashboard Analytics',
-    description: 'Real-time metrics dashboard with customizable widgets and role-based access.',
-    tags: ['React', 'TypeScript', 'D3'],
-    href: '#',
+    id: 'portfolio-v3',
+    title: 'Portfolio Dashboard',
+    description:
+      'This site — a modular, draggable widget board built with React, TypeScript, and Tailwind.',
+    tags: ['React', 'TypeScript', 'Tailwind', 'Vite'],
+    href: githubRepo.url,
     status: 'Live' as const,
-  },
-  {
-    id: 'project-2',
-    title: 'API Gateway Service',
-    description: 'High-throughput REST and GraphQL gateway with caching and rate limiting.',
-    tags: ['Node.js', 'Redis', 'Docker'],
-    href: '#',
-    status: 'Live' as const,
-  },
-  {
-    id: 'project-3',
-    title: 'Design System',
-    description: 'Component library and documentation site used across multiple product teams.',
-    tags: ['React', 'Storybook', 'Tailwind'],
-    href: '#',
-    status: 'In progress' as const,
+    /** When false, hidden from the site and not linked publicly. */
+    exposeOnSite: true,
   },
 ] as const
+
+export function getVisibleProjects() {
+  return projects.filter((project) => project.exposeOnSite)
+}
 
 export const experience = [
   {

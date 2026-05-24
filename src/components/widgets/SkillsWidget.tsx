@@ -4,7 +4,7 @@ import { WidgetShell } from '../ui/WidgetShell'
 
 export function SkillsWidget({ id }: WidgetComponentProps) {
   return (
-    <WidgetShell title="Skills" subtitle="Tech stack">
+    <WidgetShell id={id} title="Skills" subtitle="Tech stack">
       <ul id={id} className="space-y-4">
         {skills.map((skill) => (
           <li key={skill.name}>
@@ -21,7 +21,7 @@ export function SkillsWidget({ id }: WidgetComponentProps) {
               aria-label={`${skill.name} proficiency`}
             >
               <div
-                className="h-full rounded-full bg-gradient-to-r from-accent to-accent-hover transition-all"
+                className="skill-bar-fill h-full rounded-full bg-gradient-to-r from-accent to-accent-hover transition-all"
                 style={{ width: `${skill.level}%` }}
               />
             </div>
