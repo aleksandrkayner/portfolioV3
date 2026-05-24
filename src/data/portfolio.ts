@@ -13,11 +13,8 @@ export const profile = {
   avatarInitials: 'AK',
 } as const
 
-/** Repo URL for the portfolio project card (not shown as a social button). */
-export const githubRepo = {
-  url: 'https://github.com/aleksandrkayner/portfolioV3',
-  name: 'portfolioV3',
-} as const
+/** Public showcase URL — only outbound project link on the site. */
+export const portfolioSiteUrl = 'https://aleksandrkaynerportfolio.netlify.app/'
 
 export const socialLinks = [
   { label: 'LinkedIn', href: 'https://linkedin.com', icon: 'linkedin' },
@@ -46,7 +43,7 @@ export const projects = [
     description:
       'This site — a modular, draggable widget board built with React, TypeScript, and Tailwind.',
     tags: ['React', 'TypeScript', 'Tailwind', 'Vite'],
-    href: githubRepo.url,
+    href: portfolioSiteUrl,
     status: 'Live' as const,
     /** When false, hidden from the site and not linked publicly. */
     exposeOnSite: true,

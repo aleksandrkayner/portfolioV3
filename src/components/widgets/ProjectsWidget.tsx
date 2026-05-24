@@ -41,9 +41,11 @@ export function ProjectsWidget({ id }: WidgetComponentProps) {
             </div>
             <a
               href={project.href}
+              target="_blank"
+              rel="noopener noreferrer"
               className="mt-3 text-xs font-medium text-accent hover:text-accent-hover"
             >
-              View project →
+              View live site →
             </a>
           </li>
         ))}
