@@ -33,7 +33,8 @@ Edit **`src/data/portfolio.ts`** — name, projects, skills, links, and experien
 - [Development](docs/DEVELOPMENT.md) — local workflow and conventions
 - [Deployment](docs/DEPLOYMENT.md) — free hosting (Vercel, Netlify, Render)
 - [Themes](docs/THEMES.md) — light / dark / prismatic modes
-- [Prompt log](docs/PROMPT-LOG.csv) — track AI prompts (open in Excel or Google Sheets)
+- [Authentication](docs/AUTH.md) — login, OAuth, admin approval
+- [Prompt log](docs/PROMPT-LOG.xlsx) — formatted for Excel (8pt, wrapped cells). Source: `docs/PROMPT-LOG.csv`. Regenerate with `npm run prompt-log:export`.
 
 ## Deploy
 

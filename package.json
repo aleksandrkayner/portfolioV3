@@ -7,7 +7,12 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "prompt-log:export": "node scripts/export-prompt-log.mjs",
+    "dev:server": "npm run dev --prefix server",
+    "db:up": "docker compose up -d postgres",
+    "db:migrate": "npm run db:migrate --prefix server",
+    "db:seed": "npm run db:seed --prefix server"
   },
   "engines": {
     "node": "20.x"
@@ -21,6 +26,7 @@
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-grid-layout": "^2.2.3",
+    "react-router-dom": "^7.6.2",
     "reflect-metadata": "^0.2.2",
     "tailwindcss": "^4.3.0",
     "tsyringe": "^4.10.0",
@@ -35,6 +41,7 @@
     "eslint": "^10.3.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
+    "exceljs": "^3.4.0",
     "globals": "^17.6.0",
     "typescript-eslint": "^8.59.2"
   }

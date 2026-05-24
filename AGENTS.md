@@ -59,4 +59,4 @@ npm run build && npm run preview
 
 ## Prompt history
 
-See `docs/PROMPT-LOG.csv` for user prompts and retrospective notes.
+**Always** add a row to `docs/PROMPT-LOG.csv` after every user prompt (all columns), then run `npm run prompt-log:export` to refresh `docs/PROMPT-LOG.xlsx`.
