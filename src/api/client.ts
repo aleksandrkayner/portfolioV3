@@ -17,6 +17,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     signal: AbortSignal.timeout(8000),
     headers: {
       'Content-Type': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
       ...(init?.headers ?? {}),
     },
   })
@@ -51,7 +52,10 @@ export const api = {
     }),
 
   validateResetToken: (token: string) =>
-    request<{ valid: boolean }>(`/auth/reset-password/validate?token=${encodeURIComponent(token)}`),
+    request<{ valid: boolean }>('/auth/reset-password/validate', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    }),
 
   resetPassword: (body: { token: string; password: string }) =>
     request<{ message: string }>('/auth/reset-password', {

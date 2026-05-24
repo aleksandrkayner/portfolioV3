@@ -1,4 +1,4 @@
-import { and, eq, gt, or } from 'drizzle-orm'
+import { and, asc, eq, gt, or } from 'drizzle-orm'
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
 import type * as schema from '../db/schema.js'
 import {
@@ -23,9 +23,12 @@ import {
 } from '../lib/validation.js'
 import { notifyAdminNewRegistration, notifyUserApproved } from './email.js'
 import { isAdminLoginAttempt, verifyAdminLoginPassword } from '../lib/adminLogin.js'
+import { logAdminAction } from './audit.js'
 
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 14 // 14 days
+const MAX_SESSIONS_PER_USER = 10
 const ADMIN_USERNAME = 'admin'
+const ADMIN_MANAGE_PRIVILEGE = 'admin:manage_users'
 
 type Db = PostgresJsDatabase<typeof schema>
 
@@ -74,6 +77,8 @@ export async function toPublicUser(db: Db, user: User): Promise<PublicUser> {
     getUserPrivileges(db, user.id),
   ])
 
+  const isApproved = user.status === 'approved'
+
   return {
     id: user.id,
     username: user.username,
@@ -81,9 +86,9 @@ export async function toPublicUser(db: Db, user: User): Promise<PublicUser> {
     displayName: user.displayName,
     avatarUrl: user.avatarUrl,
     status: user.status,
-    roles,
-    privileges: privilegeKeys,
-    isAdmin: privilegeKeys.includes('admin:manage_users'),
+    roles: isApproved ? roles : [],
+    privileges: isApproved ? privilegeKeys : [],
+    isAdmin: isApproved && privilegeKeys.includes(ADMIN_MANAGE_PRIVILEGE),
   }
 }
 
@@ -123,7 +128,6 @@ async function ensureAdminAccount(db: Db, env: Env): Promise<User> {
     ;[user] = await db
       .update(users)
       .set({
-        passwordHash,
         status: 'approved',
         approvedAt: user.approvedAt ?? new Date(),
         updatedAt: new Date(),
@@ -149,7 +153,7 @@ export async function registerUser(
   const { username, email, password, displayName } = parsed.data
 
   if (email.toLowerCase() === env.ADMIN_LOGIN_EMAIL.toLowerCase()) {
-    return { error: 'This email is reserved for admin sign-in.' }
+    return { error: 'Registration failed. Try a different email or sign in.' }
   }
 
   const passwordHash = await hashPassword(password)
@@ -178,11 +182,8 @@ export async function registerUser(
     return { user: publicUser, sessionToken }
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Registration failed'
-    if (message.includes('users_email_unique')) {
-      return { error: 'Email is already registered' }
-    }
-    if (message.includes('users_username_unique')) {
-      return { error: 'Username is already taken' }
+    if (message.includes('users_email_unique') || message.includes('users_username_unique')) {
+      return { error: 'Registration failed. Try a different email or username.' }
     }
     return { error: 'Registration failed' }
   }
@@ -234,9 +235,29 @@ export async function loginUser(
     return { error: 'Invalid username/email or password' }
   }
 
+  await revokeAllUserSessions(db, user.id)
   const sessionToken = await createSessionForUser(db, user.id)
   const publicUser = await toPublicUser(db, user)
   return { user: publicUser, sessionToken }
+}
+
+export async function revokeAllUserSessions(db: Db, userId: string): Promise<void> {
+  await db.delete(sessions).where(eq(sessions.userId, userId))
+}
+
+async function trimUserSessions(db: Db, userId: string): Promise<void> {
+  const rows = await db
+    .select({ id: sessions.id })
+    .from(sessions)
+    .where(eq(sessions.userId, userId))
+    .orderBy(asc(sessions.createdAt))
+
+  const excess = rows.length - MAX_SESSIONS_PER_USER
+  if (excess <= 0) return
+
+  for (const row of rows.slice(0, excess)) {
+    await db.delete(sessions).where(eq(sessions.id, row.id))
+  }
 }
 
 export async function createSessionForUser(db: Db, userId: string): Promise<string> {
@@ -249,6 +270,7 @@ export async function createSessionForUser(db: Db, userId: string): Promise<stri
     expiresAt,
   })
 
+  await trimUserSessions(db, userId)
   return sessionToken
 }
 
@@ -299,6 +321,7 @@ export async function findOrCreateOAuthUser(
     if (existingOAuth.user.status === 'suspended') {
       throw new Error('Account is suspended')
     }
+    await revokeAllUserSessions(db, existingOAuth.user.id)
     const sessionToken = await createSessionForUser(db, existingOAuth.user.id)
     return {
       user: await toPublicUser(db, existingOAuth.user),
@@ -336,6 +359,7 @@ export async function findOrCreateOAuthUser(
     providerAccountId: account.providerAccountId,
   })
 
+  await revokeAllUserSessions(db, user.id)
   const sessionToken = await createSessionForUser(db, user.id)
   return {
     user: await toPublicUser(db, user),
@@ -373,6 +397,16 @@ export async function updateUserStatus(
     .where(eq(users.id, userId))
     .returning()
 
+  if (updated) {
+    await logAdminAction(
+      db,
+      adminId,
+      'user.status_update',
+      userId,
+      JSON.stringify({ status, rejectionReason: rejectionReason ?? null }),
+    )
+  }
+
   if (updated && status === 'approved') {
     const [memberRole] = await db
       .select()
@@ -393,11 +427,13 @@ export async function updateUserStatus(
 
 export async function setUserPrivileges(
   db: Db,
+  adminId: string,
   userId: string,
   privilegeKeys: string[],
 ) {
+  const safeKeys = privilegeKeys.filter((key) => key !== ADMIN_MANAGE_PRIVILEGE)
   const all = await db.select().from(privileges)
-  const selected = all.filter((p) => privilegeKeys.includes(p.key))
+  const selected = all.filter((p) => safeKeys.includes(p.key))
 
   await db.delete(userPrivileges).where(eq(userPrivileges.userId, userId))
 
@@ -408,6 +444,17 @@ export async function setUserPrivileges(
   }
 
   const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1)
+
+  if (user) {
+    await logAdminAction(
+      db,
+      adminId,
+      'user.privileges_update',
+      userId,
+      JSON.stringify({ privilegeKeys: safeKeys }),
+    )
+  }
+
   return user ? toPublicUser(db, user) : null
 }
 
@@ -416,6 +463,11 @@ export async function userHasPrivilege(
   userId: string,
   privilegeKey: string,
 ): Promise<boolean> {
+  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1)
+  if (!user || user.status !== 'approved') {
+    return false
+  }
+
   const keys = await getUserPrivileges(db, userId)
   return keys.includes(privilegeKey)
 }

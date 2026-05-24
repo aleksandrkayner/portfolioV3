@@ -74,7 +74,7 @@ Production: replace host with your deployed frontend URL (Vite proxy or same-ori
 
 1. User opens `/forgot-password` and submits email.
 2. API emails a one-hour reset link (logged to console in dev).
-3. User sets a new password at `/reset-password?token=...`.
+3. User sets a new password at `/reset-password#token=...` (token in URL hash, not sent to servers).
 4. All existing sessions for that user are invalidated.
 
 OAuth-only accounts (no password) do not receive reset emails — same generic success message either way.

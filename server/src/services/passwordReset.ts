@@ -48,7 +48,7 @@ export async function requestPasswordReset(
     expiresAt,
   })
 
-  const resetUrl = `${env.CLIENT_URL.replace(/\/$/, '')}/reset-password?token=${encodeURIComponent(plainToken)}`
+  const resetUrl = `${env.CLIENT_URL.replace(/\/$/, '')}/reset-password#token=${encodeURIComponent(plainToken)}`
   await notifyPasswordReset(env, { email: user.email, displayName: user.displayName }, resetUrl)
 
   return { message: GENERIC_FORGOT_MESSAGE }

@@ -1,24 +1,42 @@
+import { and, eq, lt } from 'drizzle-orm'
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js'
 import type { Env } from '../config/env.js'
 import { createOAuthState } from '../config/env.js'
+import type * as schema from '../db/schema.js'
+import { oauthStates } from '../db/schema.js'
 
-const oauthStates = new Map<string, { provider: 'google' | 'facebook'; expiresAt: number }>()
+type Db = PostgresJsDatabase<typeof schema>
+
 const STATE_TTL_MS = 1000 * 60 * 10
 
 function callbackUrl(env: Env, provider: 'google' | 'facebook'): string {
   return `${env.CLIENT_URL.replace(/\/$/, '')}/api/auth/${provider}/callback`
 }
 
-function cleanupStates() {
-  const now = Date.now()
-  for (const [key, value] of oauthStates) {
-    if (value.expiresAt < now) oauthStates.delete(key)
-  }
+export async function cleanupOAuthStates(db: Db): Promise<void> {
+  await db.delete(oauthStates).where(lt(oauthStates.expiresAt, new Date()))
 }
 
-export function createOAuthRedirect(env: Env, provider: 'google' | 'facebook'): string {
-  cleanupStates()
+async function storeOAuthState(
+  db: Db,
+  state: string,
+  provider: 'google' | 'facebook',
+): Promise<void> {
+  await cleanupOAuthStates(db)
+  await db.insert(oauthStates).values({
+    state,
+    provider,
+    expiresAt: new Date(Date.now() + STATE_TTL_MS),
+  })
+}
+
+export async function createOAuthRedirect(
+  db: Db,
+  env: Env,
+  provider: 'google' | 'facebook',
+): Promise<string> {
   const state = createOAuthState()
-  oauthStates.set(state, { provider, expiresAt: Date.now() + STATE_TTL_MS })
+  await storeOAuthState(db, state, provider)
   const redirectUri = callbackUrl(env, provider)
 
   if (provider === 'google') {
@@ -50,13 +68,22 @@ export function createOAuthRedirect(env: Env, provider: 'google' | 'facebook'): 
   return `https://www.facebook.com/v21.0/dialog/oauth?${params}`
 }
 
-export function consumeOAuthState(state: string, provider: 'google' | 'facebook'): boolean {
-  cleanupStates()
-  const entry = oauthStates.get(state)
-  if (!entry || entry.provider !== provider || entry.expiresAt < Date.now()) {
+export async function consumeOAuthState(
+  db: Db,
+  state: string,
+  provider: 'google' | 'facebook',
+): Promise<boolean> {
+  const [row] = await db
+    .select()
+    .from(oauthStates)
+    .where(and(eq(oauthStates.state, state), eq(oauthStates.provider, provider)))
+    .limit(1)
+
+  if (!row || row.expiresAt < new Date()) {
     return false
   }
-  oauthStates.delete(state)
+
+  await db.delete(oauthStates).where(eq(oauthStates.state, state))
   return true
 }
 

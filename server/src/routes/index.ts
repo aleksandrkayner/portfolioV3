@@ -1,3 +1,4 @@
+import rateLimit from '@fastify/rate-limit'
 import type { FastifyInstance } from 'fastify'
 import type { Env } from '../config/env.js'
 import { getDb } from '../db/index.js'
@@ -15,21 +16,40 @@ import {
   exchangeGoogleCode,
 } from '../services/oauth.js'
 import {
-  attachCurrentUser,
   clearSessionCookie,
+  createAttachCurrentUser,
+  createRequireAdmin,
+  readSessionToken,
   requireAuth,
-  SESSION_COOKIE,
   setSessionCookie,
 } from '../middleware/session.js'
-import { formatZodError, updateUserStatusSchema } from '../lib/validation.js'
+import { verifyRequestOrigin } from '../middleware/security.js'
+import {
+  formatZodError,
+  resetTokenSchema,
+  updateUserStatusSchema,
+} from '../lib/validation.js'
 import {
   requestPasswordReset,
   resetPasswordWithToken,
   validateResetToken,
 } from '../services/passwordReset.js'
 
+const authRateLimit = {
+  max: 20,
+  timeWindow: '15 minutes',
+}
+
+const forgotPasswordRateLimit = {
+  max: 5,
+  timeWindow: '1 hour',
+}
+
 export async function authRoutes(app: FastifyInstance, env: Env) {
-  app.addHook('preHandler', attachCurrentUser)
+  await app.register(rateLimit, authRateLimit)
+
+  app.addHook('preHandler', createAttachCurrentUser(env))
+  app.addHook('preHandler', verifyRequestOrigin(env))
 
   app.post('/register', async (request, reply) => {
     const db = getDb(env.DATABASE_URL)
@@ -53,28 +73,31 @@ export async function authRoutes(app: FastifyInstance, env: Env) {
 
   app.post('/logout', async (request, reply) => {
     const db = getDb(env.DATABASE_URL)
-    const token = request.cookies[SESSION_COOKIE]
+    const token = readSessionToken(request)
     if (token) await destroySession(db, token)
     clearSessionCookie(reply, env)
     return { ok: true }
   })
 
-  app.post('/forgot-password', async (request, reply) => {
-    const db = getDb(env.DATABASE_URL)
-    const result = await requestPasswordReset(db, env, request.body as { email: string })
-    if ('error' in result) {
-      return reply.code(400).send({ error: result.error })
-    }
-    return { message: result.message }
+  app.post('/forgot-password', {
+    config: { rateLimit: forgotPasswordRateLimit },
+    handler: async (request, reply) => {
+      const db = getDb(env.DATABASE_URL)
+      const result = await requestPasswordReset(db, env, request.body as { email: string })
+      if ('error' in result) {
+        return reply.code(400).send({ error: result.error })
+      }
+      return { message: result.message }
+    },
   })
 
-  app.get('/reset-password/validate', async (request, reply) => {
-    const db = getDb(env.DATABASE_URL)
-    const { token } = request.query as { token?: string }
-    if (!token) {
+  app.post('/reset-password/validate', async (request, reply) => {
+    const parsed = resetTokenSchema.safeParse(request.body)
+    if (!parsed.success) {
       return reply.code(400).send({ valid: false })
     }
-    return validateResetToken(db, token)
+    const db = getDb(env.DATABASE_URL)
+    return validateResetToken(db, parsed.data.token)
   })
 
   app.post('/reset-password', async (request, reply) => {
@@ -95,7 +118,8 @@ export async function authRoutes(app: FastifyInstance, env: Env) {
 
   app.get('/google', async (_request, reply) => {
     try {
-      const url = createOAuthRedirect(env, 'google')
+      const db = getDb(env.DATABASE_URL)
+      const url = await createOAuthRedirect(db, env, 'google')
       return reply.redirect(url)
     } catch (err) {
       return reply.code(503).send({
@@ -109,12 +133,17 @@ export async function authRoutes(app: FastifyInstance, env: Env) {
     if (query.error) {
       return reply.redirect(`${env.CLIENT_URL}/login?error=oauth_cancelled`)
     }
-    if (!query.code || !query.state || !consumeOAuthState(query.state, 'google')) {
+
+    const db = getDb(env.DATABASE_URL)
+    if (
+      !query.code ||
+      !query.state ||
+      !(await consumeOAuthState(db, query.state, 'google'))
+    ) {
       return reply.redirect(`${env.CLIENT_URL}/login?error=oauth_invalid`)
     }
 
     try {
-      const db = getDb(env.DATABASE_URL)
       const profile = await exchangeGoogleCode(env, query.code)
       const result = await findOrCreateOAuthUser(db, env, 'google', profile)
       setSessionCookie(reply, env, result.sessionToken)
@@ -127,7 +156,8 @@ export async function authRoutes(app: FastifyInstance, env: Env) {
 
   app.get('/facebook', async (_request, reply) => {
     try {
-      const url = createOAuthRedirect(env, 'facebook')
+      const db = getDb(env.DATABASE_URL)
+      const url = await createOAuthRedirect(db, env, 'facebook')
       return reply.redirect(url)
     } catch (err) {
       return reply.code(503).send({
@@ -141,12 +171,17 @@ export async function authRoutes(app: FastifyInstance, env: Env) {
     if (query.error) {
       return reply.redirect(`${env.CLIENT_URL}/login?error=oauth_cancelled`)
     }
-    if (!query.code || !query.state || !consumeOAuthState(query.state, 'facebook')) {
+
+    const db = getDb(env.DATABASE_URL)
+    if (
+      !query.code ||
+      !query.state ||
+      !(await consumeOAuthState(db, query.state, 'facebook'))
+    ) {
       return reply.redirect(`${env.CLIENT_URL}/login?error=oauth_invalid`)
     }
 
     try {
-      const db = getDb(env.DATABASE_URL)
       const profile = await exchangeFacebookCode(env, query.code)
       const result = await findOrCreateOAuthUser(db, env, 'facebook', profile)
       setSessionCookie(reply, env, result.sessionToken)
@@ -159,10 +194,15 @@ export async function authRoutes(app: FastifyInstance, env: Env) {
 }
 
 export async function adminRoutes(app: FastifyInstance, env: Env) {
-  app.addHook('preHandler', attachCurrentUser)
+  await app.register(rateLimit, authRateLimit)
+
+  const requireAdmin = createRequireAdmin(env)
+
+  app.addHook('preHandler', createAttachCurrentUser(env))
+  app.addHook('preHandler', verifyRequestOrigin(env))
 
   app.get('/users', async (request, reply) => {
-    const admin = await (await import('../middleware/session.js')).requireAdmin(request, reply)
+    const admin = await requireAdmin(request, reply)
     if (!admin) return
     const db = getDb(env.DATABASE_URL)
     const { listUsersForAdmin } = await import('../services/auth.js')
@@ -170,7 +210,7 @@ export async function adminRoutes(app: FastifyInstance, env: Env) {
   })
 
   app.get('/privileges', async (request, reply) => {
-    const admin = await (await import('../middleware/session.js')).requireAdmin(request, reply)
+    const admin = await requireAdmin(request, reply)
     if (!admin) return
     const db = getDb(env.DATABASE_URL)
     const { listPrivileges } = await import('../services/auth.js')
@@ -178,7 +218,7 @@ export async function adminRoutes(app: FastifyInstance, env: Env) {
   })
 
   app.patch('/users/:id/status', async (request, reply) => {
-    const admin = await (await import('../middleware/session.js')).requireAdmin(request, reply)
+    const admin = await requireAdmin(request, reply)
     if (!admin) return
 
     const parsed = updateUserStatusSchema.safeParse(request.body)
@@ -202,7 +242,7 @@ export async function adminRoutes(app: FastifyInstance, env: Env) {
   })
 
   app.put('/users/:id/privileges', async (request, reply) => {
-    const admin = await (await import('../middleware/session.js')).requireAdmin(request, reply)
+    const admin = await requireAdmin(request, reply)
     if (!admin) return
 
     const { updateUserPrivilegesSchema } = await import('../lib/validation.js')
@@ -214,7 +254,7 @@ export async function adminRoutes(app: FastifyInstance, env: Env) {
     const db = getDb(env.DATABASE_URL)
     const { setUserPrivileges } = await import('../services/auth.js')
     const { id } = request.params as { id: string }
-    const user = await setUserPrivileges(db, id, parsed.data.privilegeKeys)
+    const user = await setUserPrivileges(db, admin.id, id, parsed.data.privilegeKeys)
     if (!user) return reply.code(404).send({ error: 'User not found' })
     return { user }
   })

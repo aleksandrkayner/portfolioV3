@@ -2,7 +2,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify'
 import type { Env } from '../config/env.js'
 import { getDb } from '../db/index.js'
 import type { User } from '../db/schema.js'
-import { getUserBySessionToken } from '../services/auth.js'
+import { getUserBySessionToken, userHasPrivilege } from '../services/auth.js'
 
 export const SESSION_COOKIE = 'portfolio_session'
 
@@ -19,6 +19,7 @@ export function setSessionCookie(reply: FastifyReply, env: Env, token: string) {
     sameSite: 'lax',
     path: '/',
     maxAge: 60 * 60 * 24 * 14,
+    signed: true,
   })
 }
 
@@ -27,13 +28,28 @@ export function clearSessionCookie(reply: FastifyReply, env: Env) {
     path: '/',
     secure: env.NODE_ENV === 'production',
     sameSite: 'lax',
+    signed: true,
   })
 }
 
-export async function attachCurrentUser(request: FastifyRequest) {
-  const db = getDb(process.env.DATABASE_URL!)
-  const token = request.cookies[SESSION_COOKIE]
-  request.currentUser = await getUserBySessionToken(db, token)
+export function readSessionToken(request: FastifyRequest): string | undefined {
+  const raw = request.cookies[SESSION_COOKIE]
+  if (!raw) return undefined
+
+  const unsigned = request.unsignCookie(raw)
+  if (unsigned.valid && unsigned.value) {
+    return unsigned.value
+  }
+
+  return raw
+}
+
+export function createAttachCurrentUser(env: Env) {
+  return async function attachCurrentUser(request: FastifyRequest) {
+    const db = getDb(env.DATABASE_URL)
+    const token = readSessionToken(request)
+    request.currentUser = await getUserBySessionToken(db, token)
+  }
 }
 
 export function requireAuth(request: FastifyRequest, reply: FastifyReply): User | null {
@@ -44,16 +60,20 @@ export function requireAuth(request: FastifyRequest, reply: FastifyReply): User 
   return request.currentUser
 }
 
-export async function requireAdmin(request: FastifyRequest, reply: FastifyReply): Promise<User | null> {
-  const user = requireAuth(request, reply)
-  if (!user) return null
+export function createRequireAdmin(env: Env) {
+  return async function requireAdmin(
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<User | null> {
+    const user = requireAuth(request, reply)
+    if (!user) return null
 
-  const db = getDb(process.env.DATABASE_URL!)
-  const { userHasPrivilege } = await import('../services/auth.js')
-  const allowed = await userHasPrivilege(db, user.id, 'admin:manage_users')
-  if (!allowed) {
-    reply.code(403).send({ error: 'Admin access required' })
-    return null
+    const db = getDb(env.DATABASE_URL)
+    const allowed = await userHasPrivilege(db, user.id, 'admin:manage_users')
+    if (!allowed) {
+      reply.code(403).send({ error: 'Admin access required' })
+      return null
+    }
+    return user
   }
-  return user
 }

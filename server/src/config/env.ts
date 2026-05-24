@@ -4,6 +4,8 @@ import { z } from 'zod'
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().default(3001),
+  /** Bind address — use 127.0.0.1 locally; 0.0.0.0 behind a reverse proxy in production */
+  API_HOST: z.string().default('127.0.0.1'),
   DATABASE_URL: z.string().min(1),
   SESSION_SECRET: z.string().min(32),
   CLIENT_URL: z.string().url().default('http://localhost:5173'),

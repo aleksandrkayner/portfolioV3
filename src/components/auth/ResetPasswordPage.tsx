@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { ApiError, api } from '../../api/client'
 import {
   AuthButton,
@@ -8,6 +8,14 @@ import {
   AuthInput,
   handleFormSubmit,
 } from './AuthUi'
+
+function readResetToken(): string {
+  const hash = window.location.hash
+  if (hash.startsWith('#token=')) {
+    return decodeURIComponent(hash.slice('#token='.length))
+  }
+  return new URLSearchParams(window.location.search).get('token') ?? ''
+}
 
 function validatePassword(password: string): string | undefined {
   if (password.length < 8) return 'At least 8 characters'
@@ -20,8 +28,7 @@ function validatePassword(password: string): string | undefined {
 
 export function ResetPasswordPage() {
   const navigate = useNavigate()
-  const [params] = useSearchParams()
-  const token = params.get('token') ?? ''
+  const [token] = useState(readResetToken)
 
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')

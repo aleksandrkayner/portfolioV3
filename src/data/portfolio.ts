@@ -4,11 +4,11 @@
  */
 
 export const profile = {
-  name: 'Alex Kayner',
+  name: 'Aleksandr Kayner',
   role: 'Full-Stack Developer',
   tagline: 'Building thoughtful interfaces and reliable systems.',
-  location: 'Your City',
-  email: 'hello@example.com',
+  location: 'Brooklyn, NY',
+  email: 'aleksandrkayner6@gmail.com',
   availability: 'Open to opportunities',
   avatarInitials: 'AK',
 } as const

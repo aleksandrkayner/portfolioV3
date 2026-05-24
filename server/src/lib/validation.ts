@@ -59,6 +59,10 @@ export const resetPasswordSchema = z.object({
   password: passwordSchema,
 })
 
+export const resetTokenSchema = z.object({
+  token: z.string().trim().min(1, 'Reset token is required'),
+})
+
 export type RegisterInput = z.infer<typeof registerSchema>
 export type LoginInput = z.infer<typeof loginSchema>
 
